@@ -7,6 +7,8 @@ use CodeIgniter\Model;
 
 class BaseModel extends Model {
 
+    protected $skipValidation = true;
+
     private $modelsMapper;
     private $foreignRelationsCache = [];
 
@@ -61,10 +63,27 @@ class BaseModel extends Model {
         return $this->getOneByKey($primaryKeyName, $id);
     }
 
+    public function query($sqlQuery, $convertToModel = true)
+    {
+        $result = $this->db->query($sqlQuery)->getResult($this->returnType);
+
+        if ($convertToModel) {
+            return $this->parseResultToClassObject($result);
+        } else {
+            return $result;
+        }
+    }
+
     public function getAll($options = [])
     {
         $result = $this->db->table($this->table)->getWhere($options)->getResult($this->returnType);
         return $this->parseResultToClassObject($result);
+    }
+
+    public function getFirst($options = [])
+    {
+        $result = $this->db->table($this->table)->getWhere($options)->getFirstRow()->getResult($this->returnType);
+        return $this->parseResultToClassObject($result, true);
     }
 
     public function getOneByKey($key, $value)
@@ -76,7 +95,7 @@ class BaseModel extends Model {
         }
 
         $queryResult = $this->db->table($this->table)->getWhere([$key => $value])->getFirstRow($this->returnType);
-        return $this->parseResultToClassObject([$queryResult]);
+        return $this->parseResultToClassObject([$queryResult], true);
     }
 
     public function getAllByKey($key, $value) {
@@ -156,7 +175,7 @@ class BaseModel extends Model {
     }
 
 
-    private function parseResultToClassObject($data)
+    private function parseResultToClassObject($data, $uniqueResult = false)
     {
         // check if is array or object and then create new object of self class
         $result = [];
@@ -173,7 +192,7 @@ class BaseModel extends Model {
 
         }
 
-        if (sizeof($result) === 1) {
+        if ($uniqueResult && sizeof($result) === 1) {
             return $result[0];
         }
 
