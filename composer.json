@@ -1,7 +1,7 @@
 {
     "name": "yosypandriyash/ci4-model-generator",
     "type": "library",
-    "description": "Create anemyc models from mysql database in PHP codeigniter 4 framework",
+    "description": "Create anemic models from mysql database in PHP codeigniter 4 framework",
     "keywords": ["codeigniter4", "models", "model-generator"],
     "homepage": "https://github.com/yosypandriyash/ci4-model-generator",
     "license": "MIT",
