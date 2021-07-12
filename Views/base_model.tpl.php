@@ -1,4 +1,4 @@
-[PHP_OPEN]
+<?php
 
 namespace App\Models\Base;
 
