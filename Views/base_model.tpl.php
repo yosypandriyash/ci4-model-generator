@@ -18,6 +18,7 @@ class BaseModel extends Model {
     protected $validationErrors = [];
     protected $tableForeignRelations;
     protected $injectForeignTablesDependencies;
+    protected $databaseConnection;
 
     const PRE_INSERT_ACTION = 1;
     const PRE_UPDATE_ACTION = 2;
@@ -28,6 +29,8 @@ class BaseModel extends Model {
     {
         parent::__construct($db, $validation);
         helper('string');
+
+        $this->databaseConnection = $this->db->getConnection();
     }
 
     public function getLastSqlError()
@@ -82,7 +85,7 @@ class BaseModel extends Model {
 
     public function getFirst($options = [])
     {
-        $result = $this->db->table($this->table)->getWhere($options)->getFirstRow()->getResult($this->returnType);
+        $result = [$this->db->table($this->table)->getWhere($options)->getFirstRow($this->returnType)];
         return $this->parseResultToClassObject($result, true);
     }
 
@@ -179,7 +182,17 @@ class BaseModel extends Model {
     {
         // check if is array or object and then create new object of self class
         $result = [];
+
+        if (!is_array($data)) {
+            return $result;
+        }
+
         foreach ($data as $item) {
+
+            if (!$item) {
+                continue;
+            }
+
             if ($this->returnType === 'object') {
                 $elem = $this->newFromObject($item);
                 array_push($result, $elem);
@@ -315,7 +328,7 @@ class BaseModel extends Model {
         }
 
         // Check for unique value
-        if (!$sqlAction === self::PRE_UPDATE_ACTION) {
+        if ($sqlAction !== self::PRE_UPDATE_ACTION) {
             if ($isUnique && $this->validateUniqueValue($this->getMapper($declaration['name']), $var) !== true) {
                 return ['success' => false, 'message' => 'El valor debe ser único, el valor actual ya se encuentra registrado'];
             }
