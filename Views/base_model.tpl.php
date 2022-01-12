@@ -4,6 +4,7 @@ namespace App\Models\Base;
 
 use CodeIgniter\Database\ConnectionInterface;
 use CodeIgniter\Model;
+use CodeIgniter\Validation\ValidationInterface;
 
 class BaseModel extends Model {
 
@@ -19,6 +20,7 @@ class BaseModel extends Model {
     protected $tableForeignRelations;
     protected $injectForeignTablesDependencies;
     protected $databaseConnection;
+    protected $arrayData;
 
     const PRE_INSERT_ACTION = 1;
     const PRE_UPDATE_ACTION = 2;
@@ -31,6 +33,20 @@ class BaseModel extends Model {
         helper('string');
 
         $this->databaseConnection = $this->db->getConnection();
+    }
+
+    public function toObject()
+    {
+        if ($this->arrayData !== null) {
+            return $this->parseResultToClassObject($this->arrayData);
+        }
+
+        return null;
+    }
+
+    public function setArrayData($data)
+    {
+        $this->arrayData = $data;
     }
 
     public function getLastSqlError()
@@ -66,6 +82,16 @@ class BaseModel extends Model {
         return $this->getOneByKey($primaryKeyName, $id);
     }
 
+    public function toMappedArray()
+    {
+        try {
+            return $this->getArrayPropertiesFromObject();
+
+        } catch (\Exception $exception) {
+            return null;
+        }
+    }
+
     public function query($sqlQuery, $convertToModel = true)
     {
         $result = $this->db->query($sqlQuery)->getResult($this->returnType);
@@ -77,9 +103,9 @@ class BaseModel extends Model {
         }
     }
 
-    public function getAll($options = [])
+    public function getAll($options = [], $limit = null)
     {
-        $result = $this->db->table($this->table)->getWhere($options)->getResult($this->returnType);
+        $result = $this->db->table($this->table)->getWhere($options, $limit)->getResult($this->returnType);
         return $this->parseResultToClassObject($result);
     }
 
@@ -199,14 +225,22 @@ class BaseModel extends Model {
             }
 
             if ($this->returnType === 'array') {
+
+                if ($uniqueResult) {
+                    $item['array_data'] = $item;
+                }
+
                 $elem = $this->newFromArray($item);
                 array_push($result, $elem);
             }
-
         }
 
         if ($uniqueResult && sizeof($result) === 1) {
             return $result[0];
+        }
+
+        if ($uniqueResult && empty($result)) {
+            return null;
         }
 
         return $result;
